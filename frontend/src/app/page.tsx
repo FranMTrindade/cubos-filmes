@@ -1,103 +1,204 @@
+"use client";
+
+import { Form, Input, Button, Typography, Tabs } from "antd";
+import { useState } from "react";
+import back from "@/public/back.png";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { authService } from "@/services/auth";
+import { useAuth } from "@/context/authContext";
+import {  toast } from "react-toastify"; 
+import "react-toastify/dist/ReactToastify.css";
 
-export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+const { Link } = Typography;
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+export default function AuthPage() {
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+
+  const { login } = useAuth();
+
+  const handleLogin = async (values: { email: string; password: string }) => {
+    try {
+      setLoading(true);
+      await login(values.email, values.password);
+    } catch (error: any) {
+      const description = error?.response?.data?.message || "Erro ao fazer login";
+      toast.error("Falha no login: " + description[0]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRegister = async (values: {
+    name: string;
+    email: string;
+    password: string;
+    confirmPassword: string;
+  }) => {
+    if (values.password !== values.confirmPassword) {
+      console.log("error");
+      return toast.error("As senhas não coincidem"); 
+    }
+
+    try {
+      setLoading(true);
+      await authService.register({
+        name: values.name,
+        email: values.email,
+        password: values.password,
+      });
+
+      toast.success( "Cadastro realizado com sucesso!" );
+     await login(values.email, values.password);
+    } catch (error: any) {
+      const description = error?.response?.data?.message || "Erro ao cadastrar";
+      toast.error(description[0]); 
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const tabItems = [
+    {
+      key: "login",
+      label: "Login",
+      children: (
+        <Form
+          layout="vertical"
+          onFinish={handleLogin}
+          requiredMark={false}
+          className="flex flex-col gap-2"
+        >
+          <Form.Item
+            label={<span className="text-white">Nome</span>}
+            name="email"
+            rules={[{ required: true, message: "Digite seu nome ou e-mail" }]}
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+            <Input
+              placeholder="Digite seu E-mail"
+              className="bg-[#121214] border-none text-white placeholder:text-[#6F6D78]"
+              size="large"
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+          </Form.Item>
+
+          <Form.Item
+            label={<span className="text-white">Senha</span>}
+            name="password"
+            rules={[{ required: true, message: "Digite sua senha" }]}
           >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+            <Input.Password
+              placeholder="Digite sua senha"
+              className="bg-[#121214] border-none text-white placeholder:text-[#6F6D78]"
+              size="large"
+            />
+          </Form.Item>
+
+          <div className="flex justify-between items-center mt-2">
+            <Link
+              href="#"
+              style={{ color: "#8E4EC6" }}
+              className="text-sm hover:underline"
+            >
+              Esqueci minha senha
+            </Link>
+            <Button htmlType="submit" type="primary" loading={loading} size="large">
+              Entrar
+            </Button>
+          </div>
+        </Form>
+      ),
+    },
+    {
+      key: "register",
+      label: "Cadastrar",
+      children: (
+        <Form
+          layout="vertical"
+          onFinish={handleRegister}
+          requiredMark={false}
+          className="flex flex-col gap-2"
         >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+          <Form.Item
+            label={<span className="text-white">Nome</span>}
+            name="name"
+            rules={[{ required: true, message: "Digite seu nome" }]}
+          >
+            <Input
+              placeholder="Digite seu nome"
+              className="bg-[#121214] border-none text-white placeholder:text-[#6F6D78]"
+              size="large"
+            />
+          </Form.Item>
+
+          <Form.Item
+            label={<span className="text-white">E-mail</span>}
+            name="email"
+            rules={[
+              { required: true, message: "Digite seu e-mail" },
+              { type: "email", message: "E-mail inválido" },
+            ]}
+          >
+            <Input
+              placeholder="Digite seu e-mail"
+              className="bg-[#121214] border-none text-white placeholder:text-[#6F6D78]"
+              size="large"
+            />
+          </Form.Item>
+
+          <Form.Item
+            label={<span className="text-white">Senha</span>}
+            name="password"
+            rules={[{ required: true, message: "Digite uma senha" }]}
+          >
+            <Input.Password
+              placeholder="Digite sua senha"
+              className="bg-[#121214] border-none text-white placeholder:text-[#6F6D78]"
+              size="large"
+            />
+          </Form.Item>
+
+          <Form.Item
+            label={<span className="text-white">Confirmar senha</span>}
+            name="confirmPassword"
+            rules={[{ required: true, message: "Confirme sua senha" }]}
+          >
+            <Input.Password
+              placeholder="Confirme sua senha"
+              className="bg-[#121214] border-none text-white placeholder:text-[#6F6D78]"
+              size="large"
+            />
+          </Form.Item>
+
+          <div className="flex justify-end">
+            <Button htmlType="submit" type="primary" loading={loading} size="large">
+              Cadastrar
+            </Button>
+          </div>
+        </Form>
+      ),
+    },
+  ];
+
+  return (
+    <div className="relative flex h-screen w-full items-center justify-center bg-black">
+      <Image
+        src={back}
+        alt="Cinema background"
+        fill
+        className="object-cover opacity-60"
+        priority
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/90 to-transparent"></div>
+
+      <div className="relative z-10 flex flex-col justify-center w-[412px] rounded-xl bg-[#1E1E1E] p-6 shadow-lg sm:w-[90%] max-w-sm">
+        <Tabs
+          defaultActiveKey="login"
+          items={tabItems}
+          centered
+          className="[&_.ant-tabs-tab-btn]:text-white [&_.ant-tabs-ink-bar]:bg-[#8E4EC6]"
+        />
+      </div>
     </div>
   );
 }
