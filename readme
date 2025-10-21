@@ -1,0 +1,213 @@
+#  Cubos Movies – Backend (NestJS + Prisma + PostgreSQL)
+
+
+
+##  Tecnologias Utilizadas
+
+###  Backend
+- **NestJS** – Framework Node.js modular e escalável.
+- **Prisma ORM** – ORM moderno e performático para PostgreSQL.
+- **PostgreSQL** – Banco de dados relacional seguro e confiável.
+- **JWT (JSON Web Token)** – Autenticação e autorização seguras.
+- **AWS S3** – Armazenamento de imagens.
+- **SendGrid** – Envio de e-mails sem necessidade de domínio próprio.
+- **Docker + Docker Compose** – Orquestração de containers (DB, Backend e Frontend).
+
+### Frontend
+- **Next.js 14** – Framework React com suporte a SSR e App Router.
+- **Ant Design (antd)** – Biblioteca de componentes com amplo leque de opções.
+- **React Query** – Cache e controle de requisições assíncronas.
+- **Tailwind CSS** – Estilização utilitária para layouts responsivos e consistentes.
+
+---
+
+## 💡 Decisões de Arquitetura
+
+### 🪣 **AWS S3 – Armazenamento de Imagens**
+O **Amazon S3** foi escolhido por sua **alta disponibilidade, durabilidade e escalabilidade**, permitindo armazenar e servir imagens com baixo custo e performance estável.
+
+**Motivos da escolha:**
+- Suporte direto via SDK AWS para Node.js.
+- Fácil integração com o NestJS para upload e exclusão de imagens.
+- Permite versionamento e controle granular de permissões.
+- Evita sobrecarga no servidor principal, mantendo o backend leve.
+
+**Uso no projeto:**
+- Upload automático de imagens de filmes via `formData`.
+- Exclusão da imagem antiga no momento de edição.
+- Retorno da URL pública no registro do filme.
+
+---
+
+### **SendGrid – Envio de E-mails**
+O **SendGrid** foi adotado como serviço de envio de e-mails por oferecer uma **API moderna, rápida e confiável**, além de **não exigir domínio próprio para envio** — o que facilita o uso em ambientes de desenvolvimento e testes.
+
+**Motivos da escolha:**
+- Permite envio de e-mails sem domínio personalizado.
+- Alta taxa de entrega e monitoramento em tempo real.
+- Facilidade de integração via SDK oficial ou HTTP API.
+- Mantido pela Twilio, garantindo estabilidade e suporte.
+
+**Importante:**
+- Como o envio é feito via API e sem dominio proprio o email pode cair no sapan
+
+---
+
+###  **Frontend (Next.js + Ant Design)**
+O **frontend** do projeto foi desenvolvido em **Next.js**, utilizando **Ant Design** como biblioteca de componentes.
+
+**Motivos da escolha:**
+- O **Next.js** oferece **SSR (Server Side Rendering)**, **rotas dinâmicas** e **App Router**, otimizando performance.
+- O **Ant Design** foi escolhido por possuir **um leque mais amplo de componentes** prontos em comparação ao Radix UI, permitindo desenvolvimento mais ágil e visual consistente.
+- Integração fluida com React Query para gerenciamento de estados e requisições.
+
+---
+
+
+
+# Como Rodar o Projeto
+
+##  Usando Docker (recomendado)
+
+Na raiz do projeto, execute:
+
+```bash
+docker compose up --build
+```
+
+***exemplo .env**
+
+POSTGRES_USER=movies_cubo
+POSTGRES_PASSWORD=mvcubo
+POSTGRES_DB=movies_db
+
+#  Backend (NestJS) 
+# Em caso de uso do docker deve estar também na raiz
+DATABASE_URL=postgresql://movies_cubo:mvcubo@postgres:5432/movies_db?schema=public
+JWT_SECRET=supersecretkey
+JWT_EXPIRES_IN=1h
+BACKEND_PORT=3001
+
+#  AWS S3
+AWS_ACCESS_KEY_ID=SEU_ACCESS_KEY
+AWS_SECRET_ACCESS_KEY=SEU_SECRET_KEY
+AWS_REGION=us-east-2
+AWS_S3_BUCKET=cubo-filme-images
+
+#  SendGrid
+SENDGRID_API_KEY=SUA_CHAVE_SENDGRID
+SENDGRID_FROM_EMAIL=progfrancisco@gmail.com
+
+#  Frontend (Next.js)
+NEXT_PUBLIC_API_URL=http://backend:3001
+
+O comando sobe **três containers**:
+
+| Serviço            | Porta | Função                 |
+|--------------------|------:|------------------------|
+| PostgreSQL         |  5432 | Banco de dados         |
+| Backend (NestJS)   |  3001 | API principal          |
+| Frontend (Next.js) |  3000 | Interface do usuário   |
+
+A API estará disponível em:  
+ **http://localhost:3001**
+
+O frontend estará disponível em:  
+ **http://localhost:3000**
+
+---
+
+## 🔹 Rodando Localmente (sem Docker)
+
+Instale as dependências:
+
+```bash
+npm install
+```
+
+Gere o Prisma Client:
+
+```bash
+npx prisma generate
+```
+
+Execute as migrations:
+
+```bash
+npx prisma migrate dev
+```
+
+Rode o servidor:
+
+```bash
+npm run start:dev
+```
+
+A aplicação será iniciada em **http://localhost:3001**.
+
+---
+
+## 🧪 Testes Realizados
+
+### Auth
+
+- [x] **Registrar usuário**  
+  *Resultado esperado:* criar usuário
+
+- [x] **Registrar usuário com mesmo e-mail**  
+  *Resultado esperado:* não deixar criar pois já existe
+
+- [x] **Login**  
+  *Resultado esperado:* retornar access token e refresh token
+
+- [x] **Login com usuário inexistente**  
+  *Resultado esperado:* erro de credenciais inválidas
+
+---
+
+### Filmes
+
+- [x] **Criar filme (body: formData)**  
+  *Resultado esperado:* salvar filme e enviar imagem para S3
+
+- [x] **Criar filme com mesmo nome e data de lançamento**  
+  *Resultado esperado:* erro de duplicidade
+
+- [x] **Editar filme**  
+  *Resultado esperado:* atualizar apenas campos modificados
+
+- [x] **Editar filme com usuário diferente**  
+  *Resultado esperado:* erro de permissão
+
+- [x] **Editar filme trocando apenas imagem (body: formData)**  
+  *Resultado esperado:* excluir imagem antiga e salvar nova no S3
+
+
+- [x] **Buscar todos os filmes**  
+  *Resultado esperado:* retorno paginado (limite padrão 10 por página)
+
+- [x] **Buscar filmes com filtro de período**  
+  **URL:** `http://localhost:3001/movies?startDate=2025-10-17&endDate=2025-10-18`  
+  *Resultado esperado:* filmes dentro do período
+
+- [x] **Buscar filmes por nome**  
+  **URL:** `http://localhost:3001/movies?name=Vingadores`  
+  *Resultado esperado:* filmes que contenham o nome informado
+
+- [x] **Buscar filmes por gênero**  
+  **URL:** `http://localhost:3001/movies?genre=Ação`  
+  *Resultado esperado:* filmes filtrados pelo gênero
+
+- [x] **Buscar filmes combinando filtros**  
+  **URL:** `http://localhost:3001/movies?name=Vingadores&startDate=2025-10-17&endDate=2025-10-18`  
+  *Resultado esperado:* filtros aplicados simultaneamente
+
+- [x] **Deletar filme**  
+  *Resultado esperado:* remover filme do banco
+
+- [x] **Deletar filme com usuário diferente**  
+  *Resultado esperado:* erro de permissão
+
+---
+
+
